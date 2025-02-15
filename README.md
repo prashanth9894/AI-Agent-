@@ -7,7 +7,7 @@ It is built using Nextjs, TailwindCss+ShadcnUi, Zustand, Clerk, Prisma, Postgres
 
 ## Screenshots
 
-<img width="875" alt="Screenshot 2024-01-31 084121" src="https://github.com/lalitkumawat1m/Genius-AI/assets/91591901/c32e4ccd-ee93-4386-98af-0ccddbc27632">
+<img width="875" alt="https://drive.google.com/file/d/19xSLLv4J8H73zkNWHa8c0OTSzo8i3bnB/view?usp=sharing">
 
 
 ## Features
