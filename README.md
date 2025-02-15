@@ -7,7 +7,7 @@ It is built using Nextjs, TailwindCss+ShadcnUi, Zustand, Clerk, Prisma, Postgres
 
 ## Screenshots
 
-##<img width="875" alt="https://drive.google.com/file/d/19xSLLv4J8H73zkNWHa8c0OTSzo8i3bnB/view?usp=sharing">
+
 ![g3sha home page](https://github.com/user-attachments/assets/0807a3eb-2889-4a60-bb0b-af8889c99bbf)
 
 
