@@ -1,5 +1,5 @@
 
-# Genius AI
+# G3sha AI
 
 An AI Saas tool that can Generate Music, Video, Photo, Code & Chat.
 
