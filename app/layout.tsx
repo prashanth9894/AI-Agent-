@@ -8,8 +8,8 @@ import { ToasterProvider } from "@/components/toaster-provider";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Genius",
-  description: "AI Platform",
+  title: "G3SHA-AI",
+  description: "open source",
 };
 
 export default function RootLayout({

@@ -1,61 +1,195 @@
-import { auth } from "@clerk/nextjs";
+// // app/api/image/route.ts
+// import { NextResponse } from "next/server";
+// import { HfInference } from '@huggingface/inference';
+
+// const hf = new HfInference(process.env.HUGGING_FACE_API_KEY);
+
+// export async function POST(req: Request) {
+//   try {
+//     const body = await req.json();
+//     const { prompt, amount = 1, resolution = "512x512" } = body;
+
+//     if (!prompt) {
+//       return new NextResponse(JSON.stringify({ error: "Prompt is required" }), { 
+//         status: 400,
+//         headers: { 'Content-Type': 'application/json' }
+//       });
+//     }
+
+//     const [width, height] = resolution.split('x').map(Number);
+
+//     const generateImage = async () => {
+//       try {
+//         const response = await hf.textToImage({
+//           model: 'stabilityai/stable-diffusion-xl-base-1.0',
+//           inputs: prompt,
+//           parameters: {
+//             negative_prompt: "blurry, bad quality, worst quality, text, watermark",
+//             num_inference_steps: 30,
+//             guidance_scale: 7.5,
+//             width,
+//             height,
+//           }
+//         });
+
+//         const arrayBuffer = await response.arrayBuffer();
+//         const base64 = Buffer.from(arrayBuffer).toString('base64');
+//         const url = `data:image/jpeg;base64,${base64}`;
+
+//         return { url };
+//       } catch (error: any) {
+//         console.error('Individual image generation error:', error);
+//         throw new Error(error.message || 'Failed to generate image');
+//       }
+//     };
+
+//     const images = [];
+//     const numImages = parseInt(amount, 10);
+
+//     // Generate images sequentially to prevent overloading
+//     for (let i = 0; i < numImages; i++) {
+//       try {
+//         const image = await generateImage();
+//         images.push(image);
+//       } catch (error) {
+//         console.error(`Failed to generate image ${i + 1}:`, error);
+//       }
+//     }
+
+//     if (images.length === 0) {
+//       return new NextResponse(JSON.stringify({ error: "Failed to generate any images" }), { 
+//         status: 500,
+//         headers: { 'Content-Type': 'application/json' }
+//       });
+//     }
+
+//     return new NextResponse(JSON.stringify(images), {
+//       status: 200,
+//       headers: { 'Content-Type': 'application/json' }
+//     });
+
+//   } catch (error: any) {
+//     console.error('[IMAGE_ERROR]', error);
+//     return new NextResponse(JSON.stringify({ error: error.message || "Internal Server Error" }), { 
+//       status: 500,
+//       headers: { 'Content-Type': 'application/json' }
+//     });
+//   }
+// }
+
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
+import { HfInference } from '@huggingface/inference';
 
-import { checkSubscription } from "@/lib/subscription";
-import { incrementApiLimit, checkApiLimit } from "@/lib/api-limit";
+const hf = new HfInference(process.env.HUGGING_FACE_API_KEY);
 
+interface ImageRequest {
+  prompt: string;
+  amount?: number;
+  resolution?: string;
+  download?: boolean;
+}
 
+interface GeneratedImage {
+  url: string;
+  downloadableBuffer?: Buffer;
+  filename?: string;
+}
 
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
-
-export async function POST(
-  req: Request
-) {
+export async function POST(req: Request) {
   try {
-    const { userId } = auth();
-    const body = await req.json();
-    const { prompt, amount = 1, resolution = "512x512" } = body;
-
-    if (!userId) {
-      return new NextResponse("Unauthorized", { status: 401 });
-    }
+    const { prompt, amount = 1, resolution = "512x512", download = false }: ImageRequest = await req.json();
 
     if (!prompt) {
-      return new NextResponse("Prompt is required", { status: 400 });
+      return new NextResponse(JSON.stringify({ error: "Prompt is required" }), { 
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
-    if (!amount) {
-      return new NextResponse("Amount is required", { status: 400 });
+    const [width, height] = resolution.split('x').map(Number);
+
+    const generateImage = async (): Promise<GeneratedImage> => {
+      const response = await hf.textToImage({
+        model: 'stabilityai/stable-diffusion-xl-base-1.0',
+        inputs: prompt,
+        parameters: {
+          negative_prompt: "blurry, bad quality, worst quality, text, watermark",
+          num_inference_steps: 30,
+          guidance_scale: 7.5,
+          width,
+          height,
+        }
+      });
+
+      const arrayBuffer = await response.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      const base64 = buffer.toString('base64');
+      const url = `data:image/jpeg;base64,${base64}`;
+      
+      return {
+        url,
+        downloadableBuffer: buffer,
+        filename: `generated-image-${Date.now()}.jpg`
+      };
+    };
+
+    const images: GeneratedImage[] = [];
+    const numImages = parseInt(String(amount), 10);
+
+    // Generate images sequentially to prevent overloading
+    for (let i = 0; i < numImages; i++) {
+      try {
+        const image = await generateImage();
+        images.push(image);
+      } catch (error) {
+        console.error(`Failed to generate image ${i + 1}:`, error);
+        // Continue with the loop to try generating remaining images
+      }
     }
 
-    if (!resolution) {
-      return new NextResponse("Resolution is required", { status: 400 });
+    if (images.length === 0) {
+      return new NextResponse(JSON.stringify({ error: "Failed to generate any images" }), { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
-    const freeTrial = await checkApiLimit();
-    const isPro = await checkSubscription();
-
-    if (!freeTrial && !isPro) {
-      return new NextResponse("Free trial has expired. Please upgrade to pro.", { status: 403 });
+    // Handle single image download
+    if (download) {
+      if (images.length === 1) {
+        // For single image, return as downloadable file
+        return new NextResponse(images[0].downloadableBuffer, {
+          status: 200,
+          headers: {
+            'Content-Type': 'image/jpeg',
+            'Content-Disposition': `attachment; filename="${images[0].filename}"`,
+            'Access-Control-Expose-Headers': 'Content-Disposition'
+          }
+        });
+      } else {
+        // For multiple images, still include downloadable data
+        return new NextResponse(JSON.stringify(images), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
     }
 
-    const response = await openai.images.generate({
-      model: "dall-e-3",
-      prompt,
-      n: parseInt(amount, 10),
-      size: resolution,
+    // For non-download requests, clean the response
+    const cleanedImages = images.map(({ downloadableBuffer, ...rest }) => rest);
+
+    return new NextResponse(JSON.stringify(cleanedImages), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
     });
 
-    if (!isPro) {
-      await incrementApiLimit();
-    }
-
-    return NextResponse.json(response.data);
-  } catch (error) {
-    console.log('[IMAGE_ERROR]', error);
-    return new NextResponse("Internal Error", { status: 500 });
+  } catch (error: any) {
+    console.error('[IMAGE_ERROR]', error);
+    return new NextResponse(JSON.stringify({ 
+      error: error.message || "Internal Server Error"
+    }), { 
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
-};
+}

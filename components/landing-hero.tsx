@@ -12,7 +12,7 @@ export const LandingHero = () => {
   return (
     <div className="text-whitefont-bold py-36 text-center space-y-5">
       <div className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl space-y-5 font-extrabold">
-        <h1 className="bg-gradient-to-r from-blue-600 via-green-500 to-indigo-400 inline-block text-transparent bg-clip-text" >The Best AI Tool for</h1>
+        <h1 className="bg-gradient-to-r from-blue-600 via-green-500 to-indigo-400 inline-block text-transparent bg-clip-text" > OPEN SOURCE AI Tool for</h1>
         <br />
         <div className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600">
           <TypewriterComponent
@@ -42,7 +42,7 @@ export const LandingHero = () => {
         </Link>
       </div>
       <div className="text-zinc-400 text-xs md:text-sm font-normal">
-        No credit card required.
+        CREATE BY SANTHOSH RAJ V & PRASHANTH N
       </div>
     </div>
   );

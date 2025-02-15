@@ -4,7 +4,7 @@ import { Empty } from "@/components/empty";
 
 const Error = () => {
   return ( 
-    <Empty label="Something went wrong." />
+    <Empty label="Something went wrong in api." />
    );
 }
  

@@ -11,7 +11,7 @@ export const Loader = () => {
         />
       </div>
       <p className="text-sm text-muted-foreground">
-        Genius AI is thinking...
+       G3sha AI is thinking...
       </p>
     </div>
   );

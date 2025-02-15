@@ -1,3 +1,4 @@
+// app/video/page.tsx
 "use client";
 
 import * as z from "zod";
@@ -6,8 +7,7 @@ import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "react-hot-toast";
-import { FileAudio } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { FileVideo } from "lucide-react";
 
 import { Heading } from "@/components/heading";
 import { Button } from "@/components/ui/button";
@@ -15,16 +15,19 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { Loader } from "@/components/loader";
 import { Empty } from "@/components/empty";
-import { useProModal } from "@/hooks/use-pro-modal";
 
-import { formSchema } from "./constants";
+const formSchema = z.object({
+  prompt: z.string().min(1, {
+    message: "Video prompt is required"
+  }),
+});
+
+type FormValues = z.infer<typeof formSchema>;
 
 const VideoPage = () => {
-  const router = useRouter();
-  const proModal = useProModal();
   const [video, setVideo] = useState<string>();
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       prompt: "",
@@ -33,23 +36,21 @@ const VideoPage = () => {
 
   const isLoading = form.formState.isSubmitting;
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: FormValues) => {
     try {
       setVideo(undefined);
 
       const response = await axios.post('/api/video', values);
-
-      setVideo(response.data[0]);
-      form.reset();
-    } catch (error: any) {
-      if (error?.response?.status === 403) {
-        proModal.onOpen();
+      
+      if (response.data && response.data.length > 0) {
+        setVideo(response.data[0]);
+        form.reset();
       } else {
-        toast.error("Something went wrong.");
+        toast.error("No video was generated.");
       }
-    console.log(error);
-    } finally {
-      router.refresh();
+    } catch (error: any) {
+      toast.error(error.response?.data || "Failed to generate video.");
+      console.log(error);
     }
   }
 
@@ -58,7 +59,7 @@ const VideoPage = () => {
       <Heading
         title="Video Generation"
         description="Turn your prompt into video."
-        icon={FileAudio}
+        icon={FileVideo}
         iconColor="text-orange-700"
         bgColor="bg-orange-700/10"
       />
@@ -66,18 +67,7 @@ const VideoPage = () => {
         <Form {...form}>
           <form 
             onSubmit={form.handleSubmit(onSubmit)} 
-            className="
-              rounded-lg 
-              border 
-              w-full 
-              p-4 
-              px-3 
-              md:px-6 
-              focus-within:shadow-sm
-              grid
-              grid-cols-12
-              gap-2
-            "
+            className="rounded-lg border w-full p-4 px-3 md:px-6 focus-within:shadow-sm grid grid-cols-12 gap-2"
           >
             <FormField
               name="prompt"
@@ -94,7 +84,10 @@ const VideoPage = () => {
                 </FormItem>
               )}
             />
-            <Button className="col-span-12 lg:col-span-2 w-full" type="submit" disabled={isLoading} size="icon">
+            <Button 
+              className="col-span-12 lg:col-span-2 w-full" 
+              disabled={isLoading}
+            >
               Generate
             </Button>
           </form>
@@ -105,11 +98,15 @@ const VideoPage = () => {
           </div>
         )}
         {!video && !isLoading && (
-          <Empty label="No video files generated." />
+          <Empty label="No video generated." />
         )}
         {video && (
-          <video controls className="w-full aspect-video mt-8 rounded-lg border bg-black">
-            <source src={video} />
+          <video 
+            controls 
+            className="w-full aspect-video mt-8 rounded-lg border bg-black"
+          >
+            <source src={video} type="video/mp4" />
+            Your browser does not support the video tag.
           </video>
         )}
       </div>

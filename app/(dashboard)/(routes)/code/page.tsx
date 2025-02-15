@@ -1,60 +1,57 @@
 "use client";
 
-import * as z from "zod";
-import axios from "axios";
 import { Code } from "lucide-react";
-import { useForm } from "react-hook-form";
+import axios from "axios";
 import { useState } from "react";
 import { toast } from "react-hot-toast";
 import ReactMarkdown from "react-markdown";
 import { useRouter } from "next/navigation";
-import { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 
 import { BotAvatar } from "@/components/bot-avatar";
 import { Heading } from "@/components/heading";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { cn } from "@/lib/utils";
 import { Loader } from "@/components/loader";
 import { UserAvatar } from "@/components/user-avatar";
 import { Empty } from "@/components/empty";
 import { useProModal } from "@/hooks/use-pro-modal";
 
-import { formSchema } from "./constants";
+interface Message {
+  role: 'user' | 'model';
+  content: string;
+}
 
 const CodePage = () => {
   const router = useRouter();
   const proModal = useProModal();
-  const [messages, setMessages] = useState<ChatCompletionMessageParam[]>([]);
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      prompt: ""
-    }
-  });
-
-  const isLoading = form.formState.isSubmitting;
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [prompt, setPrompt] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    
+    if (!prompt.trim()) return;
+    
     try {
-      const userMessage: ChatCompletionMessageParam = { role: "user", content: values.prompt };
+      setIsLoading(true);
+      const userMessage: Message = { role: "user", content: prompt };
       const newMessages = [...messages, userMessage];
       
       const response = await axios.post('/api/code', { messages: newMessages });
       setMessages((current) => [...current, userMessage, response.data]);
       
-      form.reset();
+      setPrompt("");
     } catch (error: any) {
       if (error?.response?.status === 403) {
         proModal.onOpen();
       } else {
         toast.error("Something went wrong.");
       }
-    console.log(error);
+      console.log(error);
     } finally {
+      setIsLoading(false);
       router.refresh();
     }
   }
@@ -70,42 +67,28 @@ const CodePage = () => {
       />
       <div className="px-4 lg:px-8">
         <div>
-          <Form {...form}>
-            <form 
-              onSubmit={form.handleSubmit(onSubmit)} 
-              className="
-                rounded-lg 
-                border 
-                w-full 
-                p-4 
-                px-3 
-                md:px-6 
-                focus-within:shadow-sm
-                grid
-                grid-cols-12
-                gap-2
-              "
-            >
-              <FormField
-                name="prompt"
-                render={({ field }) => (
-                  <FormItem className="col-span-12 lg:col-span-10">
-                    <FormControl className="m-0 p-0">
-                      <Input
-                        className="border-0 outline-none focus-visible:ring-0 focus-visible:ring-transparent"
-                        disabled={isLoading} 
-                        placeholder="Simple toggle button using react hooks." 
-                        {...field}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
+          <form 
+            onSubmit={onSubmit} 
+            className="rounded-lg border w-full p-4 px-3 md:px-6 focus-within:shadow-sm grid grid-cols-12 gap-2"
+          >
+            <div className="col-span-12 lg:col-span-10">
+              <Input
+                className="border-0 outline-none focus-visible:ring-0 focus-visible:ring-transparent"
+                disabled={isLoading} 
+                placeholder="Simple toggle button using react hooks." 
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
               />
-              <Button className="col-span-12 lg:col-span-2 w-full" type="submit" disabled={isLoading} size="icon">
-                Generate
-              </Button>
-            </form>
-          </Form>
+            </div>
+            <Button 
+              className="col-span-12 lg:col-span-2 w-full" 
+              type="submit" 
+              disabled={isLoading} 
+              size="icon"
+            >
+              Generate
+            </Button>
+          </form>
         </div>
         <div className="space-y-4 mt-4">
           {isLoading && (
@@ -117,9 +100,9 @@ const CodePage = () => {
             <Empty label="No conversation started." />
           )}
           <div className="flex flex-col-reverse gap-y-4">
-            {messages.map((message) => (
+            {messages.map((message, index) => (
               <div 
-                key={message.content?.toString()} 
+                key={index} 
                 className={cn(
                   "p-8 w-full flex items-start gap-x-8 rounded-lg",
                   message.role === "user" ? "bg-white border border-black/10" : "bg-muted",
@@ -136,7 +119,7 @@ const CodePage = () => {
                     <code className="bg-black/10 rounded-lg p-1" {...props} />
                   )
                 }} className="text-sm overflow-hidden leading-7">
-                  {message.content?.toString() || ""}
+                  {message.content}
                 </ReactMarkdown>
               </div>
             ))}
