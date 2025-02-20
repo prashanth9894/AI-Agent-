@@ -146,7 +146,7 @@ export async function POST(request: Request) {
       content: responseText,
     });
   } catch (error) {
-    console.error("Error in /api/conversation:", error);
+    console.error("Error in /api/chatbot:", error);
     return NextResponse.json(
       { error: "Internal Server Error. Please try again later." },
       { status: 500 }
