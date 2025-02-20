@@ -21,7 +21,7 @@ export const LandingHero = () => {
                 "Chatbot.",
                 "Code Generation.",
                 "Music Generation.",
-                "Video Generation.",
+                // "Video Generation.",
                 "Photo Generation.",
                 "Blog Writing."
               ],
