@@ -1,13 +1,9 @@
 
-# Genius AI
+# G3sha AI
 
 An AI Saas tool that can Generate Music, Video, Photo, Code & Chat.
 
 It is built using Nextjs, TailwindCss+ShadcnUi, Zustand, Clerk, Prisma, Postgresql, and Stripe.
-
-## Screenshots
-
-<img width="875" alt="Screenshot 2024-01-31 084121" src="https://github.com/lalitkumawat1m/Genius-AI/assets/91591901/c32e4ccd-ee93-4386-98af-0ccddbc27632">
 
 
 ## Features
